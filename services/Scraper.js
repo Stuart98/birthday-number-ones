@@ -3,6 +3,10 @@ const axios = require('axios');
 const fs = require('fs');
 const PromisePool = require('@supercharge/promise-pool');
 
+// bring in the cached data once so it doesnt need re-read
+const rawNumberOnesData = fs.readFileSync('./data/number-ones.json');
+const numberOnesData = JSON.parse(rawNumberOnesData);
+
 /**
  * Converts the full date picked from the website into a YYYY-MM-DD format.
  * @param {String} date Date in format `1 August 2020`
@@ -76,10 +80,7 @@ async function getNumberOneRemote(year, month, day) {
  * @param {String} day The (zero-padded) day to look for
  */
 function getNumberOneLocal(year, month, day) {
-  const rawdata = fs.readFileSync('./data/number-ones.json');
-  const numberOnes = JSON.parse(rawdata);
-
-  return numberOnes[`${year}-${month}-${day}`];
+  return numberOnesData[`${year}-${month}-${day}`];
 }
 
 /**
@@ -159,9 +160,7 @@ async function cacheNumberOnes(date) {
   const { results } = await PromisePool
     .withConcurrency(100)
     .for(dates)
-    .process(async (d) => {
-      return getNumberOneRemote(d.year, d.month, d.day);
-    });
+    .process(async (d) => getNumberOneRemote(d.year, d.month, d.day));
 
   // build an object with the date strings as the key
   const saveData = {};
